@@ -1,0 +1,62 @@
+% Modul for Butterworth Filter
+pkg load signal
+
+% Path for test and production folder
+% path = 'ModulTest.csv'
+% path= 'C:\DTS\SLICEWare\1.08.0868\Data\ModulTest\'
+% path= 'C:\Users\DavidStrucken\Desktop\SalontaFinal\ModulRig_AluWabe2'
+
+% actual path
+ordner_pfad = 'C:\Users\DavidStrucken\Desktop\SalontaFinal\ModulRig_AluWabe2';
+
+% list all files in actual folder
+dateien = dir([ordner_pfad, '/*.csv']);
+
+% Check, if folder is empty
+if isempty(dateien)
+    error('Keine CSV-Dateien im aktuellen Ordner gefunden.');
+end
+
+% read name of csv-file
+csv_datei = dateien(1).name;
+
+% read data from csv-file
+data = csvread(csv_datei, 23, 0);
+
+
+%Channel Description Acceleration-05,
+time = data(:, 1);
+acceleration_channel_5 = data(:, 6);
+
+
+% Acceleration + CFC60 Filter
+fs = 2000;
+t = 0:1/fs:1;
+order = 2;
+f_cutoff = 60;
+
+% Butterworth Filter
+[b, a] = butter(order, f_cutoff/(fs/2));
+
+% Zero-phase filtern mit filtfilt
+filtered_signal_zerophase = filtfilt(b, a, acceleration_channel_5);
+
+
+% Signal plotten
+figure;
+
+subplot(2,1,1);
+plot(time, acceleration_channel_5);
+title('Original Signal');
+xlabel('Time(s)');
+ylabel('Amplitude');
+
+subplot(2,1,2);
+plot(time, filtered_signal_zerophase);
+title('Zero-Phase Filtered Signal');
+xlabel('Time (s)');
+ylabel('Amplitude');
+
+
+% save diagram as png
+saveas(gcf, "Output/AluWabe2_acceleration.png", 'png');
