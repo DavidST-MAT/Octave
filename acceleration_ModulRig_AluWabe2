@@ -1,45 +1,47 @@
-% Modul for Butterworth Filter
+% Modul for signal processing package
 pkg load signal
 
-% Path for test and production folder
-% path = 'ModulTest.csv'
-% path= 'C:\DTS\SLICEWare\1.08.0868\Data\ModulTest\'
-% path= 'C:\Users\DavidStrucken\Desktop\SalontaFinal\ModulRig_AluWabe2'
-
-% actual path
-ordner_pfad = 'C:\Users\DavidStrucken\Desktop\SalontaFinal\ModulRig_AluWabe2';
-
-% list all files in actual folder
-dateien = dir([ordner_pfad, '/*.csv']);
-
-% Check, if folder is empty
-if isempty(dateien)
-    error('Keine CSV-Dateien im aktuellen Ordner gefunden.');
+% Argumente abrufen
+args = argv();
+if length(args) < 1
+    error("CSV-Dateiname als Argument erforderlich.");
 end
 
-% read name of csv-file
-csv_datei = dateien(1).name;
+% CSV-Datei einlesen (erstes Argument)
+%csv_filename = args{1};
+csv_filename = 'ModulTest.csv';
+
 
 % read data from csv-file
-data = csvread(csv_datei, 23, 0);
+try
+    data = csvread(csv_filename, 23, 0);
+catch
+    error('Error reading data from CSV file.');
+end
 
 
-%Channel Description Acceleration-05,
+% Extract time and acceleration data
 time = data(:, 1);
 acceleration_channel_5 = data(:, 6);
 
-
-% Acceleration + CFC60 Filter
+% Define signal processing parameters (CFC60)
+num_samples = 10041; % Number of samples
 fs = 2000;
-t = 0:1/fs:1;
-order = 2;
-f_cutoff = 60;
+duration = num_samples / fs; % Calculate the duration
+t = 0:(1/fs):(duration - 1/fs); % Create the time vector
+order = 2; %Filter Order
+f_cutoff = 100; %Cutoff Frequency
 
 % Butterworth Filter
 [b, a] = butter(order, f_cutoff/(fs/2));
 
-% Zero-phase filtern mit filtfilt
-filtered_signal_zerophase = filtfilt(b, a, acceleration_channel_5);
+
+% zero-phase filtering with filtfilt
+try
+    filtered_signal_zerophase = filtfilt(b, a, acceleration_channel_5);
+catch
+    error('Error applying Butterworth filter.');
+end
 
 
 % Signal plotten
@@ -49,14 +51,17 @@ subplot(2,1,1);
 plot(time, acceleration_channel_5);
 title('Original Signal');
 xlabel('Time(s)');
-ylabel('Amplitude');
+ylabel('Amplitude(g)');
 
 subplot(2,1,2);
 plot(time, filtered_signal_zerophase);
 title('Zero-Phase Filtered Signal');
-xlabel('Time (s)');
-ylabel('Amplitude');
+xlabel('Time(s)');
+ylabel('Amplitude(g)');
 
 
 % save diagram as png
-saveas(gcf, "Output/AluWabe2_acceleration.png", 'png');
+outputFolderPath = 'C:\Users\DavidStrucken\Desktop\SalontaFinal\ModulRig_AluWabe2\Output\';
+outputFileName = 'AluWabe2_acceleration.png';
+outputFilePath = fullfile(outputFolderPath, outputFileName);
+saveas(gcf, outputFilePath, 'png');
