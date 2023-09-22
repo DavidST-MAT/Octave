@@ -19,6 +19,7 @@ alle_daten = [];
 leg = {};
 spalten_ueberschriften = {};
 zeitstempel_raw_combined = [];
+gueltige_zeitstempel = [];
 
 % Define current time
 current_time = now;
@@ -29,21 +30,19 @@ for i = 1:length(dateiliste)
       temp = [];
       clear zeitstempel_formatiert;
       clear value_hours_alle;
-      clear gueltige_zeitstempel;
-      gueltige_zeitstempel = [];
 
 
-      % Name der Datei
+      % file name
       dateiname = fullfile(ordnerpfad, dateiliste(i).name);
 
-      % CSV-Datei einlesen (mit textscan, ansonsten falsche Formatierung des Datums)
+      % Read CSV file (using textscan, otherwise incorrect date formatting).
       daten = textscan(fopen(dateiname), '%s %s %f %s', 'Delimiter', ',');
 
-      % Lesen der Temperaturwerte
+      % "Reading the temperature values
       temperature = daten{3};
       zeitstempel_raw = daten{1};
 
-      % Bestimme Anzahl der Elemente im Array für die Zeit
+      % Determine the number of elements in the array for time
       anzahl_datensaetze_alle = numel(zeitstempel_raw);
 
       for j = 1:anzahl_datensaetze_alle
@@ -62,7 +61,7 @@ for i = 1:length(dateiliste)
       end
 
 
-      % Y-Achse von -150 bis 250
+      % Y-axis from -150 to 250
       ytick_locations = [-40, -20, 0, 20, 40, 60, 80, 100, 120];
       ylim([min(ytick_locations), max(ytick_locations)]);
       yticks(ytick_locations);
@@ -77,7 +76,7 @@ for i = 1:length(dateiliste)
       % Set the X-axis ticks to the desired locations
       xticks(xtick_locations);
 
-      % Achsenbeschriftungen
+      % Axis labels
       xlabel('Hours');
       ylabel('°C');
 
@@ -86,10 +85,10 @@ for i = 1:length(dateiliste)
           disp('The variable is empty.');
       else
 
-          % Finde Indizes der Zeilen, die die Bedingung an die Temperatur erfüllen
+          % Find indices of the rows that satisfy the condition on temperature
           valid_temperature = find(temp >= -100 & temp <= 200);
 
-          % Behalte nur die Zeilen, die die Bedingung erfüllen
+          % Keep only the rows that satisfy the condition
           sorted_temperatur = temp(valid_temperature);
 
 
@@ -97,18 +96,16 @@ for i = 1:length(dateiliste)
           disp(gueltige_zeitstempel);
           disp(sorted_time);
 
-          % Fügen Sie "zeitstempel_raw" zum kombinierten Array hinzu
           if isempty(zeitstempel_raw_combined)
-            zeitstempel_raw_combined = {-gueltige_zeitstempel};
-            disp(zeitstempel_raw_combined);
+            zeitstempel_raw_combined = -gueltige_zeitstempel;
           end
 
           temp(temp < -100 | temp > 200) = NaN;
 
-          % Füge die Temperaturdaten zur Gesamtdatenmatrix hinzu
-          %alle_daten{i} = temperatur;
+          % Add the temperature data to the overall data matrix
           sorted_time = -sorted_time;
           plot(sorted_time, sorted_temperatur);
+
           % Add grid lines
           grid on;
 
@@ -121,7 +118,7 @@ for i = 1:length(dateiliste)
 
 
 
-           % Aktuellen Dateinamen bearbeiten für Legende und Überschrift der neuen csv-Tabelle
+           % Edit the current file name for the legend and header of the new CSV table
           [~, dateiname_ohne_erweiterung, ~] = fileparts(dateiname);
           parts = strsplit(dateiname_ohne_erweiterung, '_');
           desiredParts = parts(end-1:end);
@@ -134,13 +131,12 @@ for i = 1:length(dateiliste)
 
 
           % Add the column header
-          desiredString = [desiredString "[°C]"];
+          desiredString = [desiredString '[°C]'];
           spalten_ueberschriften = [spalten_ueberschriften, desiredString];
 
       end
 
       hold on;
-      disp('!!!!!!!!!!!!!!')
 
     catch
         fprintf('Error processing data from file %s.\n', dateiliste(i).name);
@@ -153,11 +149,8 @@ hold off;
 legend(leg);
 
 umgewandelte_daten = transpose(alle_daten);
-disp(umgewandelte_daten);
 
-gueltige_zeitstempel = -gueltige_zeitstempel;
-umgewandelte_zeit = transpose(gueltige_zeitstempel);
-disp(umgewandelte_zeit);
+umgewandelte_zeit = transpose(zeitstempel_raw_combined);
 
 umgewandelte_daten = [umgewandelte_zeit, umgewandelte_daten];
 
@@ -174,13 +167,14 @@ saveas(gcf, outputFullPath, 'png');
 
 
 
-
+%outputCSVFolder = 'C:/Users/MAT-Solutions/Documents/Videoware/Results/';
 outputCSVFolder  = 'C:\Users\DavidStrucken\Desktop\SalontaFinal\TemperatureLog\Output';
 outputCSVFileName  = 'TemperatureLog.csv';
 outputCSVFullPath  = fullfile(outputCSVFolder, outputCSVFileName);
 
 header = ['Time[h]', spalten_ueberschriften]
 header = strjoin(header, ',');
-dlmwrite(outputCSVFullPath, header, 'delimiter', '');
-%dlmwrite(outputCSVFullPath, zeitstempel_raw_combined, '-append', 'delimiter', ',');
-dlmwrite(outputCSVFullPath , umgewandelte_daten, '-append', 'delimiter', ',');
+fid = fopen(outputCSVFullPath, "w", "n", "windows-1252");
+dlmwrite(fid, header, 'delimiter', '');
+dlmwrite(fid , umgewandelte_daten, '-append', 'delimiter', ',');
+fclose(fid);
